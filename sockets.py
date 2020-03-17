@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# Copyright (c) 2013-2014 Abram Hindle
+# Copyright (c) 2013-2014 Abram Hindle, Anders Johnson
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -59,7 +59,7 @@ class World:
     def world(self):
         return self.space
     
-# Client class and the two functions beneath it are based off of chat example from Abram Hindle found here: https://github.com/uofa-cmput404/cmput404-slides/blob/master/examples/WebSocketsExamples/chat.py
+# Client class is based off of chat example from Abram Hindle found here: https://github.com/uofa-cmput404/cmput404-slides/blob/master/examples/WebSocketsExamples/chat.py
 class Client:
     def __init__(self):
         self.queue = queue.Queue()
@@ -70,19 +70,17 @@ class Client:
     def get(self):
         return self.queue.get()
 
-def send_all(msg):
-    for client in clients:
-        client.put( msg )
-
-def send_all_json(obj):
-    send_all( json.dumps(obj) )
-
 clients = list()
 myWorld = World()     
 
 def set_listener( entity, data ):
     ''' do something with the update ! '''
-    print("what?")
+    for client in clients:
+        # We add the data to their queue for us to send later
+        # We form it into a JSON packet, then send it
+        packet = dict()
+        packet[str(entity)] = data
+        client.put(json.dumps(packet))
 
 myWorld.add_set_listener( set_listener )
         
@@ -104,7 +102,6 @@ def read_ws(ws,client):
                 # Packet looks like: { 'X__': {'x':___, "y":___}}
                 entity_id = list(packet.keys())[0]
                 myWorld.set(entity_id, packet[entity_id])
-                send_all_json( packet )
             else:
                 break
     except:
@@ -123,13 +120,11 @@ def subscribe_socket(ws):
     ws.send(json.dumps(myWorld.world()))
     try:
         while True:
-            # block here
-            msg = client.get()
+            msg = client.get() # Gets the next element from the client's queue
             ws.send(msg)
     except Exception as e:# WebSocketError as e:
         print("WS Error %s" % e)
     finally:
-        print("game over")
         clients.remove(client)
         gevent.kill(g)
 
@@ -159,13 +154,14 @@ def world():
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
+    return jsonify(myWorld.get(entity)), 200
 
 
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    return None
+    myWorld.clear()
+    return jsonify(myWorld.world()), 200
 
 
 

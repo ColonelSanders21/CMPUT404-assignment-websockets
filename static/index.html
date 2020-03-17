@@ -45,17 +45,23 @@ function debug(str) {
 world = {};
 
 //XXX: TODO Make this prettier!
+// The styling is used from my AJAX assignment, found here: https://github.com/ColonelSanders21/CMPUT404-assignment-ajax/blob/master/static/index.html
 function drawCircle(context,entity) {
     with(context) {
-        beginPath();                
+        beginPath();              
         lineWidth = 3;
         var x = entity["x"];
         var y = entity["y"];
         //moveTo(x,y);
-        fillStyle = entity["colour"];
-        strokeStyle = fillStyle;
-        arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
-        stroke();                                
+        if(entity["radius"] > 10){
+            fillStyle = "white";
+        }else{
+            fillStyle = entity["colour"];
+        }
+        strokeStyle = entity["colour"];
+        arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);
+        fill();
+        stroke(); 
     }
 }
 
@@ -123,7 +129,6 @@ function getPosition(e) {
 
 function addEntity(entity, data) {
     world[entity] = data;
-    // drawNextFrame(); // (but should we?)
     //XXX: Send a XHTML Request that updates the entity you just modified!
     // We send the data over via websocket.
     entity_dict = {}
@@ -236,17 +241,51 @@ mouse = (function() {
 
 // Add the application specific mouse listeners!
 //XXX: TODO Make these prettier!
+
+//This chunck of code before the mouse listeners is taken from my previous AJAX assignment, which can be found here: https://github.com/ColonelSanders21/CMPUT404-assignment-ajax/blob/master/static/index.html
+
+var endColorIndex = 1;
+var currentColor = [255,0,0];
+var currentColorStr = 'rgb(255,0,0)';
+function colorStep(){
+    // This function cycles through the colours of the rainbow by incrementing/decrementing
+    // RGB values each time we add an entity
+    var rainbow = [
+        [255, 0, 0], //red
+        [255, 127, 0], //orange
+        [255, 255, 0], //yellow
+        [0, 255, 0], //green
+        [0, 0, 255], //blue
+        [75, 0, 130], //indigo
+        [148, 0, 211] //violet
+    ];
+    var endColor = rainbow[endColorIndex];
+    if(!(currentColor[0] == endColor[0] && currentColor[1] == endColor[1] && currentColor[2] == endColor[2])){
+        for(let i=0; i < currentColor.length; i++){
+            if(currentColor[i] < endColor[i]){
+                currentColor[i] += 1;
+            }else if(currentColor[i] > endColor[i]){
+                currentColor[i] -= 1;
+            };
+        };
+        currentColorStr = 'rgb(' + currentColor[0] +','+currentColor[1] + ',' + currentColor[2] + ')';
+    }
+    else{
+        endColorIndex = (endColorIndex + 1)%(rainbow.length);
+        endColor = rainbow[endColorIndex];
+    };
+};
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':currentColorStr, 'radius': 15});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':currentColorStr, 'radius':15});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    addEntityWithoutName({'x':x,'y':y,'colour':currentColorStr,'radius':10});
+    colorStep();
 });
 
 
@@ -256,8 +295,7 @@ function update() {
 
 
 function wsSetup() {
-    // We will also get the world, while we are at it
-
+    // As of right now, on first connection, we have the server send us the world via the websocket.
     var url = "ws://"+host+"/subscribe";
     console.log("url is " + url)   
     socket = new WebSocket(url);
@@ -266,12 +304,11 @@ function wsSetup() {
         console.log("Websocket opened");
     };
     socket.onerror = function(msg) {
-        console.log("uh oh");
         debug("WebSocket Error:" + msg.data);
     };
     socket.onmessage = function(msg) {  
         try {
-            debug("WebSocket Recv:" + msg.data);
+            // debug("WebSocket Recv:" + msg.data);
             //XXX: TODO What are you going to do here?
             // We update our world with these entities
             updates = JSON.parse(msg.data)
