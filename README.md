@@ -22,6 +22,8 @@ Contributors / Licensing
 
 Generally everything is LICENSE'D under the Apache 2 license by Abram Hindle.
 
+Some code in sockets.py is based on an example file provided by Abram Hindle found [here](https://github.com/uofa-cmput404/cmput404-slides/tree/master/examples/WebSocketsExamples). Additionally, code from my previous assignment has been used in parts of static/index.html and sockets.py, which can be found [here](https://github.com/ColonelSanders21/CMPUT404-assignment-ajax). They are also licensed under the Apache 2 license by Abram Hindle and Anders Johnson, and these lines have been attributed in the code itself.
+
 freetests.py is LICENSE'D under a BSD-like license:
 
 From ws4py
